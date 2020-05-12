@@ -1,7 +1,8 @@
 # PFC-LV
 Principal fitted components method with a latent variable for binary responses
 # Description
-We proposed a joint model for dimension reduction in binary regression using a continuous latent variable to represent an unobserved response underlying the binary response. The minimal sufficient linear reduction is obtained, and an efficient expectation maximization algorithm is developed for carrying out maximum likelihood estimation.
+We proposed a joint model for dimension reduction in binary regression using a continuous latent variable to represent an unobserved response underlying the binary response. The minimal sufficient linear reduction is obtained, and an efficient expectation maximization algorithm is developed for carrying out maximum likelihood estimation. The algorithm approximates latent variable integration by using Gauss–Hermite quadrature. 
+
 # Usage
 ```R
 EMquad_esti_para(X, Y, d, r, B=50, iter.max =30, err.tol = 0.0001)
