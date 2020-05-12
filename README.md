@@ -24,7 +24,7 @@ EMquad_esti_para(X, Y, d, r, B=50, iter.max =30, err.tol = 0.0001)
 * `numpar`: number of parameters.
 * `bic`: value of Bayesian information criterion.
 
-# Examples
+# Example
 ```R
 library(dr) 
 library(gam)
@@ -71,7 +71,6 @@ for(k in 1:C){
   inv2 <- solve(crossprod(R.new,R.new))
   P2<-R.new %*% inv2 %*% t(R.new)
   err_PFC_LV[k] <- sqrt(sum(diag(t(P1-P2)%*%(P1-P2))))
-  print(err_PFC_LV[k])
 }
 
 ```
