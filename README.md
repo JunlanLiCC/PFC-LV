@@ -27,7 +27,7 @@ EMquad_esti_para(X, Y, d, r, B=50, iter.max =30, err.tol = 0.0001)
 
 # Example
 ```R
-## the required packages ##
+## load the required packages ##
 library(dr) 
 library(gam)
 library(ldr)
@@ -36,7 +36,9 @@ library(mvtnorm)
 library(logitnorm)
 library(fastGHQuad)
 library(randomForest)
-source("function-revised.R")
+
+## load the required functions ##
+source("PFC_LV_function.R")
 
 set.seed(2020)
 B = 50
@@ -44,7 +46,6 @@ n = 400
 d = 2
 p = 10
 r = 3
-C = 200
 GAMMA <- diag(1,p,d)
 DELTA <- diag(1,p,p)
 MU <- as.matrix(rep(0,p),dim=c(p,1))
@@ -55,8 +56,9 @@ R.true <- solve(DELTA) %*% GAMMA
 inv1 <- solve(crossprod(R.true,R.true))
 P1 <- R.true %*% inv1 %*% t(R.true)
 
-## apply PFC-LV to 200 data replications ##
-err_PFC_LV <- rep(0,C)
+## 200 data replications ##
+C = 200
+err_PFC_O <- err_PFC_LV <- rep(0,C)
 for(k in 1:C){
   ## generate data from the joint model ##
   a_true<-1
@@ -69,13 +71,23 @@ for(k in 1:C){
     X[i,] <- mvrnorm(1,MU + GAMMA %*% BETA %*% (fpi(theta_prior[i],r)),DELTA)
     Y[i] <- rbinom(1,1,Pi_theta[i])
   }
-  
+
+  ## gold standard ##
+  fit_gold <- pfc(X, theta_prior, fy = bf(theta_prior,case="poly",degree=r), numdir=d, structure="unstr")
+  R.pfc_gold <- solve(fit_gold$Deltahat)%*%fit_gold$Gammahat
+  inv_pfc_gold <- solve(crossprod(R.pfc_gold,R.pfc_gold))
+  P_gold <- R.pfc_gold %*% inv_pfc_gold %*% t(R.pfc_gold)
+
+  ## calculate the estimation error of PFC-O ##
+  err_PFC_O[k] <- sqrt(sum(diag(t(P1-P_gold)%*%(P1-P_gold))))
+
+ ## apply PFC-LV ##
   GHEM_para <- EMquad_esti_para(X, Y, d=d, r=r, B=B, iter.max =30, err.tol = 0.0001)
   R.new <- solve(GHEM_para$DELTA) %*% GHEM_para$GAMMA
   inv2 <- solve(crossprod(R.new,R.new))
   P2<-R.new %*% inv2 %*% t(R.new)
   
-  ## calculate the estimation error ##
+  ## calculate the estimation error of PFC-LV ##
   err_PFC_LV[k] <- sqrt(sum(diag(t(P1-P2)%*%(P1-P2))))
 }
 
