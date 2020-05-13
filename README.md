@@ -8,25 +8,26 @@ We proposed a joint model for dimension reduction in binary regression using a c
 EMquad_esti_para(X, Y, d, r, B=50, iter.max =30, err.tol = 0.0001)
 ```
 #### Arguments
-* `X`: design matrix.
-* `Y`: binary response vector.
-* `d`: maximum number of directions to be used in estimating the reduction subspace.
-* `r`: degree of polynomial basis function.
+* `X`: design matrix
+* `Y`: binary response vector
+* `d`: maximum number of directions to be used in estimating the reduction subspace
+* `r`: degree of polynomial basis function
 * `B`: number of Gauss-Hermite nodes
-* `iter.max`: maximum number of iterations within GH-EM algorithm. The default is 30.
-* `err.tol`: error threshold to stop the algorithm. The default is 0.0001.
+* `iter.max`: maximum number of iterations within GH-EM algorithm (the default is 30)
+* `err.tol`: error threshold to stop the algorithm (the default is 0.0001)
 
 #### Value
-* `MU`: estimate of μ.
-* `GAMMA`: estimate of Γ.
-* `BETA`: estimate of β.
-* `DELTA`: estimate of Δ.
-* `L`: approximate value of the log-likelihood.
-* `numpar`: number of parameters.
-* `bic`: value of Bayesian information criterion.
+* `MU`: estimate of μ
+* `GAMMA`: estimate of Γ
+* `BETA`: estimate of β
+* `DELTA`: estimate of Δ
+* `L`: approximate value of the log-likelihood
+* `numpar`: number of parameters
+* `bic`: value of Bayesian information criterion
 
 # Example
 ```R
+## the required packages ##
 library(dr) 
 library(gam)
 library(ldr)
@@ -54,8 +55,10 @@ R.true <- solve(DELTA) %*% GAMMA
 inv1 <- solve(crossprod(R.true,R.true))
 P1 <- R.true %*% inv1 %*% t(R.true)
 
+## apply PFC-LV to 200 data replications ##
 err_PFC_LV <- rep(0,C)
 for(k in 1:C){
+  ## generate data from the joint model ##
   a_true<-1
   b_true<-0
   theta_prior <- rnorm(n,0,1)
@@ -71,6 +74,8 @@ for(k in 1:C){
   R.new <- solve(GHEM_para$DELTA) %*% GHEM_para$GAMMA
   inv2 <- solve(crossprod(R.new,R.new))
   P2<-R.new %*% inv2 %*% t(R.new)
+  
+  ## calculate the estimation error ##
   err_PFC_LV[k] <- sqrt(sum(diag(t(P1-P2)%*%(P1-P2))))
 }
 
