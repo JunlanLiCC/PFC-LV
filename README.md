@@ -81,7 +81,7 @@ for(k in 1:C){
   ## calculate the estimation error of PFC-O ##
   err_PFC_O[k] <- sqrt(sum(diag(t(P1-P_gold)%*%(P1-P_gold))))
 
- ## apply PFC-LV ##
+  ## apply PFC-LV ##
   GHEM_para <- EMquad_esti_para(X, Y, d=d, r=r, B=B, iter.max =30, err.tol = 0.0001)
   R.new <- solve(GHEM_para$DELTA) %*% GHEM_para$GAMMA
   inv2 <- solve(crossprod(R.new,R.new))
