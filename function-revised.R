@@ -1,90 +1,90 @@
 ### PWSVM ###
-lwpsvm <- function(x, y, H, lambda) 
-{
-  require(kernlab)
-  n <- length(y)
-  p <- ncol(x)
-  
-  step <- 1/H
-  pi.grid <- seq(step, 1-step, by = step)
-  
-  bar.x <- apply(x, 2, mean)
-  cov.x <- cov(x)
-  
-  # standardization
-  temp <- eigen(cov.x)
-  D <- diag(sqrt(temp$values))
-  V <- temp$vectors
-  sd.x <-  V %*% D
-  inv.sd.x <- diag(1/sqrt(temp$values)) %*% t(V)
-  z <- t(inv.sd.x %*% (t(x) - bar.x))
-  
-  w <- matrix(0, p, H)
-  for (h in 1:(H-1)) {
-    alpha <- rep(0, n)
-    temp <- ksvm(x = z, y = as.factor(y), type = "C-svc", kernel = "vanilladot", kpar = list(), C = lambda, class.weights = c("1" = 1-pi.grid[h], "-1" = pi.grid[h]))
-    alpha[temp@SVindex] <- unlist(temp@alpha)
-    w[,h] <- apply(unlist(temp@coef) * z[temp@SVindex,], 2, sum)
-  }
-  
-  psi <- solve(t(sd.x)) %*% w
-  Mn <- matrix(0, p, p)
-  for (h in 1:H) Mn <- Mn + psi[,h, drop = F] %*% t(psi[,h, drop = F])
-  
-  obj <- eigen(Mn)
-  obj
-}
-
-sqrt_inv <- function(A) 
-{
-  A <- (A + t(A)) / 2
-  eig <- eigen(A)
-  eig.vec <- eig$vec
-  eig.val <- eig$val
-  
-  temp <- t(eig.vec) / sqrt(eig$val)
-  return(eig.vec %*% temp)
-}
-### dr ###
-dr_dirreg<-function(y, X, d, nslices)
-{
-  n <- dim(X)[1]
-  p <- dim(X)[2] 
-  
-  #sort y and X
-  y.org <- y; X.org <- X
-  ord <- order(y.org)
-  y <- y.org[ord]; X <- X.org[ord, ]
-  
-  X <- scale(X, center = TRUE, scale = F)
-  sqrtinv.cov <- sqrt_inv(cov(X))
-  Z <- X %*% sqrtinv.cov
-  
-  #equiparition slicing
-  slicing <- dr.slices(y, nslices)
-  nslices <- slicing$nslices
-  slice.sizes <- slicing$slice.sizes	
-  slice.indicator <- slicing$slice.indicator
-  
-  Z.means <- matrix(NA, p, nslices)
-  M1 <- matrix(0, p, p)
-  for (k in 1 : nslices) 
-  {
-    Z.k <- Z[slice.indicator == k, , drop = F]
-    Z.means[, k] <- colMeans(Z.k)
-    M10 <-  t(Z.k) %*% Z.k / slice.sizes[k] - diag(p)
-    M1 <- M1 + M10 %*% t(M10) * slice.sizes[k] / n
-  }
-  M20 <- Z.means %*% (t(Z.means) * slice.sizes / n)
-  M2 <- M20 %*% t(M20)
-  M3 <- sum(diag(M20)) * M20
-  
-  M <- M1 + M2 + M3
-  B.Z <- eigen(M)$vec[, 1 : d, drop = F]
-  
-  B.X <- sqrtinv.cov %*% B.Z
-  return(list(B.X = B.X, B.Z = B.Z,slice.sizes=slice.sizes))
-}
+# lwpsvm <- function(x, y, H, lambda) 
+# {
+#   require(kernlab)
+#   n <- length(y)
+#   p <- ncol(x)
+#   
+#   step <- 1/H
+#   pi.grid <- seq(step, 1-step, by = step)
+#   
+#   bar.x <- apply(x, 2, mean)
+#   cov.x <- cov(x)
+#   
+#   # standardization
+#   temp <- eigen(cov.x)
+#   D <- diag(sqrt(temp$values))
+#   V <- temp$vectors
+#   sd.x <-  V %*% D
+#   inv.sd.x <- diag(1/sqrt(temp$values)) %*% t(V)
+#   z <- t(inv.sd.x %*% (t(x) - bar.x))
+#   
+#   w <- matrix(0, p, H)
+#   for (h in 1:(H-1)) {
+#     alpha <- rep(0, n)
+#     temp <- ksvm(x = z, y = as.factor(y), type = "C-svc", kernel = "vanilladot", kpar = list(), C = lambda, class.weights = c("1" = 1-pi.grid[h], "-1" = pi.grid[h]))
+#     alpha[temp@SVindex] <- unlist(temp@alpha)
+#     w[,h] <- apply(unlist(temp@coef) * z[temp@SVindex,], 2, sum)
+#   }
+#   
+#   psi <- solve(t(sd.x)) %*% w
+#   Mn <- matrix(0, p, p)
+#   for (h in 1:H) Mn <- Mn + psi[,h, drop = F] %*% t(psi[,h, drop = F])
+#   
+#   obj <- eigen(Mn)
+#   obj
+# }
+# 
+# sqrt_inv <- function(A) 
+# {
+#   A <- (A + t(A)) / 2
+#   eig <- eigen(A)
+#   eig.vec <- eig$vec
+#   eig.val <- eig$val
+#   
+#   temp <- t(eig.vec) / sqrt(eig$val)
+#   return(eig.vec %*% temp)
+# }
+# ### DR ###
+# dr_dirreg<-function(y, X, d, nslices)
+# {
+#   n <- dim(X)[1]
+#   p <- dim(X)[2] 
+#   
+#   #sort y and X
+#   y.org <- y; X.org <- X
+#   ord <- order(y.org)
+#   y <- y.org[ord]; X <- X.org[ord, ]
+#   
+#   X <- scale(X, center = TRUE, scale = F)
+#   sqrtinv.cov <- sqrt_inv(cov(X))
+#   Z <- X %*% sqrtinv.cov
+#   
+#   #equiparition slicing
+#   slicing <- dr.slices(y, nslices)
+#   nslices <- slicing$nslices
+#   slice.sizes <- slicing$slice.sizes	
+#   slice.indicator <- slicing$slice.indicator
+#   
+#   Z.means <- matrix(NA, p, nslices)
+#   M1 <- matrix(0, p, p)
+#   for (k in 1 : nslices) 
+#   {
+#     Z.k <- Z[slice.indicator == k, , drop = F]
+#     Z.means[, k] <- colMeans(Z.k)
+#     M10 <-  t(Z.k) %*% Z.k / slice.sizes[k] - diag(p)
+#     M1 <- M1 + M10 %*% t(M10) * slice.sizes[k] / n
+#   }
+#   M20 <- Z.means %*% (t(Z.means) * slice.sizes / n)
+#   M2 <- M20 %*% t(M20)
+#   M3 <- sum(diag(M20)) * M20
+#   
+#   M <- M1 + M2 + M3
+#   B.Z <- eigen(M)$vec[, 1 : d, drop = F]
+#   
+#   B.X <- sqrtinv.cov %*% B.Z
+#   return(list(B.X = B.X, B.Z = B.Z,slice.sizes=slice.sizes))
+# }
 
 ### the polynomial basis function ###
 fpi <- function(pii,r=3){
@@ -96,9 +96,9 @@ fpi <- function(pii,r=3){
   return(result)
 }
 
-### GH-EM ### 
+### the GH-EM algorithm for linear logit ### 
 EMquad_esti_para <- function(X, Y, d=2, r=r, B=50, iter.max =30, err.tol = 0.001){
-  ###initialize the parameters
+  ## initialize the parameters
   rf.fit<-randomForest(X,as.factor(Y),mtry=2,ntree=500)
   rf.probs <- predict(rf.fit, type = "prob")[,2]
   rf.probs[which(rf.probs>0.975)] <- 0.975
@@ -115,6 +115,7 @@ EMquad_esti_para <- function(X, Y, d=2, r=r, B=50, iter.max =30, err.tol = 0.001
   n <- dim(X)[1]
   p <- dim(X)[2] 
  
+  ## generation of gauss integer nodes
   nodes <- gaussHermiteData(B)$x
   quad_weights <- gaussHermiteData(B)$w
   all_nodes <- t(matrix(rep(nodes,n),nrow = B,ncol = n))
@@ -126,7 +127,7 @@ EMquad_esti_para <- function(X, Y, d=2, r=r, B=50, iter.max =30, err.tol = 0.001
     }
   }
 
-  #iteration between estimation and maximization
+  ## iteration between E-step and M-step until convergence
   iter <- 1; err2 <- 1; L<-1
   while (err2 >= err.tol & iter <= iter.max){
     #print(iter)
@@ -141,7 +142,7 @@ EMquad_esti_para <- function(X, Y, d=2, r=r, B=50, iter.max =30, err.tol = 0.001
       } 
     }
     
-    ######## coefficient estimator
+    ## weighted logistic regression
     I <- rep(1,B)
     Y_tilde <- kronecker(Y,I)
     I_w <- rep(1,n)
@@ -154,6 +155,8 @@ EMquad_esti_para <- function(X, Y, d=2, r=r, B=50, iter.max =30, err.tol = 0.001
     glm.fit<-glm(as.vector(Y_tilde) ~ theta.new , family = quasibinomial , weight = wei)
     b<-as.numeric(glm.fit$coefficients[1])
     a<-as.numeric(glm.fit$coefficients[2])
+    
+    ## M-step ##
     est_para <- max_para_quad(X, Y, theta,u, omega, quad_weights, f_theta, n, B, d, p, a,b)
     
     ################################ 
@@ -169,6 +172,7 @@ EMquad_esti_para <- function(X, Y, d=2, r=r, B=50, iter.max =30, err.tol = 0.001
     iter <- iter + 1
     L<- Lnew
   }
+  ##  approximatation of the log-likelihood
   LV<- rep(0,n)
   fac <- matrix(rep(0,n*B), nrow = n, ncol = B)
   for(i in 1:n){
@@ -180,13 +184,14 @@ EMquad_esti_para <- function(X, Y, d=2, r=r, B=50, iter.max =30, err.tol = 0.001
   }
   L_value<-sum(LV)
   
+  ## Bayesian information criterion
   paranum <- 2+p*(p+3)/2+r*d+d*(p-d)
   BIC <- -2*L_value+log(n)*paranum
  
   return(list(MU = MU, GAMMA = GAMMA, BETA  = BETA, DELTA = DELTA, L=L_value, numpar=paranum,bic=BIC))
 }
 
-### M-step ### 
+### M-step for linear logit ### 
 max_para_quad <- function(X, Y, theta, u, omega, quad_weights, f_theta, n, B, d, p,a,b)
 {
   "%^%"<-function(M, pow) 
@@ -264,9 +269,103 @@ max_para_quad <- function(X, Y, theta, u, omega, quad_weights, f_theta, n, B, d,
   return(list(Muhat=Muhat, Betahat=Betahat,Gammahat=Gammahat, Deltahat=Deltahat , L=loglik))
 }
 
+### the GH-EM algorithm for nonlinear logit ###
+EMquad_esti_para_nl <- function(X, Y, d=2,r=r,B=50,iter.max =35, err.tol = 0.001){
+  
+  ## initialize the parameters
+  rf.fit<-randomForest(X,as.factor(Y),mtry=2,ntree=500)
+  rf.probs <- predict(rf.fit, type = "prob")[,2]
+  rf.probs[which(rf.probs>0.975)] <- 0.975
+  rf.probs[which(rf.probs<0.025)] <- 0.025
+  ynew<-logit(rf.probs)
+  fit1 <- pfc(X,ynew, fy = bf(ynew,case="poly",degree=r), numdir=d, structure="unstr")
+  MU <- fit1$Muhat - fit1$Gammahat %*% fit1$Betahat %*% attr(bf(ynew,case="poly",degree=r),"scaled:center")
+  BETA<-fit1$Betahat
+  GAMMA<-fit1$Gammahat
+  DELTA<-fit1$Deltahat
+  a<-1
+  b<-logit(sum(Y)/n)
+  h_theta <- sqrt(2)*all_nodes
+  
+  n <- dim(X)[1]
+  p <- dim(X)[2] 
+  
+  ## generation of gauss integer nodes
+  nodes <- gaussHermiteData(B)$x
+  quad_weights <- gaussHermiteData(B)$w
+  all_nodes <- t(matrix(rep(nodes,n),nrow = B,ncol = n))
+  theta <- sqrt(2)*all_nodes
+  f_theta <- array(rep(0), c(r,n,B))
+  for(i in 1:n){
+    for(j in 1:B){
+      f_theta[,i,j] <- fpi(theta[i,j],r)
+    }
+  }
+  
+  ##iteration between E-step and M-step until convergence
+  iter <- 1; err2 <- 1; L<-1
+  while (err2 >= err.tol & iter <= iter.max){
+    #print(iter)
+    
+    omega <- rep(0,n)
+    u <- matrix(rep(0,n*B), nrow = n, ncol = B)
+    for(i in 1:n){
+      for(j in 1:B){
+        u[i,j] <- (1/sqrt(pi))*dmvnorm(X[i,],mean = MU + GAMMA %*% BETA %*% f_theta[ ,i,j],sigma=DELTA,log=FALSE) *
+          dbinom(Y[i],1,1/(1+exp(-h_theta[i,j])),log=FALSE)
+        omega[i] <- omega[i] + u[i,j]*quad_weights[j]
+      }
+    }
+    ## estimate of the nonlinear logit function 
+    I <- rep(1,B)
+    Y_tilde <- kronecker(Y,I)
+    I_w <- rep(1,n)
+    quad_weights_new<-as.matrix(quad_weights,nrow=1)
+    w<- kronecker(quad_weights_new,I_w)
+    w_new<-array(as.vector(w),c(n,B))
+    wei_matrix<-u*w_new/(omega*n)
+    wei <- as.vector(t(wei_matrix))
+    theta.new<-as.vector(t(theta))
+    gam.fit<-gam(as.vector(Y_tilde) ~ s(theta.new,4), family = quasibinomial, weight = wei)
+    h_theta <- matrix(predict(gam.fit, newdata=data.frame(theta.new)),byrow=TRUE,ncol=B)
+    est_para <- max_para_quad_nl(X, Y, theta,u, omega, quad_weights, f_theta, n, B, d, p, Y_tilde,h_theta)
+    
+    ################################
+    #print(est_para)
+    Lnew <-  est_para$L
+    err1 <- abs(Lnew - L)
+    err2 <- abs((Lnew - L)/L)
+    
+    MU <- est_para$Muhat
+    GAMMA <- est_para$Gammahat
+    BETA <- est_para$Betahat
+    DELTA <- est_para$Deltahat
+    
+    iter <- iter + 1
+    L<- Lnew
+  }
+  ## approximatation of the log-likelihood
+  LV<- rep(0,n)
+  fac <- matrix(rep(0,n*B), nrow = n, ncol = B)
+  for(i in 1:n){
+    for(j in 1:B){
+      fac[i,j] <- (1/sqrt(pi))*dmvnorm(X[i,],mean = MU + GAMMA %*% BETA %*% f_theta[ ,i,j],sigma=DELTA,log=FALSE) *
+        dbinom(Y[i],1,1/(1+exp(-h_theta[i,j])),log=FALSE) * quad_weights[j]
+    }
+    LV[i] <-log(sum(fac[i,]))
+  }
+  L_value<-sum(LV)
+  
+  ## Bayesian information criterion
+  paranum <- p*(p+3)/2+r*d+d*(p-d)
+  BIC <- -2*L_value+log(n)*paranum
+  
+  return(list(MU = MU, GAMMA = GAMMA, BETA  = BETA, DELTA = DELTA,L=L_value, numpar=paranum,bic=BIC))
+}
 
-### nonlinear logit ###
-max_para_quad_1 <- function(X, Y, theta, u, omega, quad_weights, f_theta, n, B, d, p,h_theta)
+
+## M-step for nonlinear logit ##
+max_para_quad_nl <- function(X, Y, theta, u, omega, quad_weights, f_theta, n, B, d, p,h_theta)
 {
   "%^%"<-function(M, pow)
   {
@@ -343,95 +442,3 @@ max_para_quad_1 <- function(X, Y, theta, u, omega, quad_weights, f_theta, n, B, 
   loglik <- temp1 + temp2 +temp3
   return(list(Muhat=Muhat, Betahat=Betahat,Gammahat=Gammahat, Deltahat=Deltahat , L=loglik))
 }
-
-EMquad_esti_para_1 <- function(X, Y, d=2,r=r,B=50,iter.max =35, err.tol = 0.001){
-  
-  ###initialize the parameters
-  rf.fit<-randomForest(X,as.factor(Y),mtry=2,ntree=500)
-  rf.probs <- predict(rf.fit, type = "prob")[,2]
-  rf.probs[which(rf.probs>0.975)] <- 0.975
-  rf.probs[which(rf.probs<0.025)] <- 0.025
-  ynew<-logit(rf.probs)
-  fit1 <- pfc(X,ynew, fy = bf(ynew,case="poly",degree=r), numdir=d, structure="unstr")
-  MU <- fit1$Muhat - fit1$Gammahat %*% fit1$Betahat %*% attr(bf(ynew,case="poly",degree=r),"scaled:center")
-  BETA<-fit1$Betahat
-  GAMMA<-fit1$Gammahat
-  DELTA<-fit1$Deltahat
-  a<-1
-  b<-logit(sum(Y)/n)
-  h_theta <- sqrt(2)*all_nodes
-  
-  n <- dim(X)[1]
-  p <- dim(X)[2] 
-  
-  nodes <- gaussHermiteData(B)$x
-  quad_weights <- gaussHermiteData(B)$w
-  all_nodes <- t(matrix(rep(nodes,n),nrow = B,ncol = n))
-  theta <- sqrt(2)*all_nodes
-  f_theta <- array(rep(0), c(r,n,B))
-  for(i in 1:n){
-    for(j in 1:B){
-      f_theta[,i,j] <- fpi(theta[i,j],r)
-    }
-  }
-  
-  #iteration between estimation and maximization
-  iter <- 1; err2 <- 1; L<-1
-  while (err2 >= err.tol & iter <= iter.max){
-    print(iter)
-    
-    omega <- rep(0,n)
-    u <- matrix(rep(0,n*B), nrow = n, ncol = B)
-    for(i in 1:n){
-      for(j in 1:B){
-        u[i,j] <- (1/sqrt(pi))*dmvnorm(X[i,],mean = MU + GAMMA %*% BETA %*% f_theta[ ,i,j],sigma=DELTA,log=FALSE) *
-          dbinom(Y[i],1,1/(1+exp(-h_theta[i,j])),log=FALSE)
-        omega[i] <- omega[i] + u[i,j]*quad_weights[j]
-      }
-    }
-    
-    ######## coefficient estimator
-    I <- rep(1,B)
-    Y_tilde <- kronecker(Y,I)
-    I_w <- rep(1,n)
-    quad_weights_new<-as.matrix(quad_weights,nrow=1)
-    w<- kronecker(quad_weights_new,I_w)
-    w_new<-array(as.vector(w),c(n,B))
-    wei_matrix<-u*w_new/(omega*n)
-    wei <- as.vector(t(wei_matrix))
-    theta.new<-as.vector(t(theta))
-    gam.fit<-gam(as.vector(Y_tilde) ~ s(theta.new,4), family = quasibinomial, weight = wei)
-    h_theta <- matrix(predict(gam.fit, newdata=data.frame(theta.new)),byrow=TRUE,ncol=B)
-    est_para <- max_para_quad_1(X, Y, theta,u, omega, quad_weights, f_theta, n, B, d, p, Y_tilde,h_theta)
-    
-    ################################
-    #print(est_para)
-    Lnew <-  est_para$L
-    err1 <- abs(Lnew - L)
-    err2 <- abs((Lnew - L)/L)
-    
-    MU <- est_para$Muhat
-    GAMMA <- est_para$Gammahat
-    BETA <- est_para$Betahat
-    DELTA <- est_para$Deltahat
-    
-    iter <- iter + 1
-    L<- Lnew
-  }
-  LV<- rep(0,n)
-  fac <- matrix(rep(0,n*B), nrow = n, ncol = B)
-  for(i in 1:n){
-    for(j in 1:B){
-      fac[i,j] <- (1/sqrt(pi))*dmvnorm(X[i,],mean = MU + GAMMA %*% BETA %*% f_theta[ ,i,j],sigma=DELTA,log=FALSE) *
-        dbinom(Y[i],1,1/(1+exp(-h_theta[i,j])),log=FALSE) * quad_weights[j]
-    }
-    LV[i] <-log(sum(fac[i,]))
-  }
-  L_value<-sum(LV)
-  
-  paranum <- p*(p+3)/2+r*d+d*(p-d)
-  BIC <- -2*L_value+log(n)*paranum
-  
-  return(list(MU = MU, GAMMA = GAMMA, BETA  = BETA, DELTA = DELTA,L=L_value, numpar=paranum,bic=BIC))
-}
-
